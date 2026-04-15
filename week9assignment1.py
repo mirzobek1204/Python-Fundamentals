@@ -1,39 +1,74 @@
-def filter_alerts(alerts, minimum_severity):
-    severity_levels = ["ADVISORY", "WATCH", "WARNING"]
-    minimum_index = severity_levels.index(minimum_severity)
-    filtered_alerts = []
+from dataclasses import dataclass,field
+@dataclass
+class MenuItem:
+    name: str
+    price: float
+    quantity: int
+    def value(self):
+        return round(self.price * self.quantity, 2)
+    
+@dataclass
+class Restaurant:
+    name: str
+    menu_items: list = field(default_factory=list)
+    total_revenue: float = field(init=False)
+    def __post_init__(self):
+        self._refresh()
+    def _refresh(self):
+        total = 0
+        for item in self.menu_items:
+            total += item.value()
+        self.total_revenue = round(total ,2)
+    def add_item(self, item: MenuItem):
+        self.menu_items.append(item)
+        self._refresh()
+    def serve(self,item_name: str, qty: int) -> bool:
+        for item in self.menu_items:
+            if item.name == item_name:
+                if item.quantity >= qty:
+                    item.quantity -= qty
+                    self._refresh()
+                    return True
+                return False
+        return False
+    def resupply(self,item_name: str , qty: int):
+        for item in self.menu_items:
+            if item.name == item_name:
+                item.quantity += qty
+                self._refresh()
+    def report(self) -> str:
+        lines = [f"{self.name} Menu:"]
+        for item in self.menu_items:
+            lines.append(f"  {item.name}: {item.quantity} servings @ ${item.price} each")
+        lines.append(f"Total revenue: ${self.total_revenue}")
+        return "\n".join(lines)
+    
+m1 = MenuItem("Burger", 12.99, 20)
+m2 = MenuItem("Salad", 8.49, 40)
+m3 = MenuItem("Pasta", 14.99, 15)
 
-    for alert in alerts:
-        if alert.strip() == "":
-            continue
-        parts = alert.split(" - ")
-        if len(parts) != 3:
-            continue
-        severity_and_location = parts[0]
-        description = parts[2]
+r = Restaurant("BistroHub")
+r.add_item(m1)
+r.add_item(m2)
+r.add_item(m3)
 
-        if "] " not in severity_and_location:
-            continue
-        severity_part, location = severity_and_location.split("] ")
-        severity = severity_part.replace("[", "")
-
-        if severity not in severity_levels:
-            continue
-        if severity_levels.index(severity) >= minimum_index:
-            summary = f"{severity} ({location}): {description}"
-            filtered_alerts.append(summary)
-
-    return filtered_alerts
-weather_data = [
-    "[ADVISORY] Austin - 11/05 08:00 - Dense fog reported.",
-    "[ADVISORY] Dallas - 11/05 08:15 - Light rain expected.",
-    "[WATCH] Houston - 11/05 12:00 - Conditions favorable for tornadoes.",
-    "",
-    "[WARNING] Galveston - 11/05 14:30 - Hurricane making landfall.",
-    "[WARNING] Miami - 11/05 15:00 - Flash flooding imminent.",
-    "[ADVISORY] Seattle - 11/05 16:00 - Light drizzle."
-]
-print(filter_alerts(weather_data, "WATCH"))
-print(filter_alerts(weather_data, "WARNING"))
+print(r.total_revenue)
+print(r.serve("Burger", 5))
+print(r.serve("Burger", 25))
+r.resupply("Salad", 10)
+print(r.report())
 
 
+
+
+
+
+
+
+
+
+
+
+     
+
+    
